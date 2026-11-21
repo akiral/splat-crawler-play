@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Splat Crawler</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #05050b; overflow: hidden; }
+    canvas#splat-canvas { display: block; width: 100vw; height: 100vh; outline: none; touch-action: none; }
+    #status {
+      position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center;
+      padding: 24px; color: #b4b2b4; font: 15px/1.5 ui-monospace, Menlo, Consolas, monospace; white-space: pre-line;
+      pointer-events: none;
+    }
+    #status.error { color: #f08068; }
+    #status[hidden] { display: none; }
+  </style>
+</head>
+<body>
+  <canvas id="splat-canvas" tabindex="0"></canvas>
+  <div id="status">Building the splat library…</div>
+  <script type="module">
+    const status = document.getElementById('status');
+    if (location.protocol === 'file:') {
+      // browsers refuse to load ES modules and WebAssembly from file:// pages
+      status.className = 'error';
+      status.textContent = 'Open this page through a local web server, not as a file:\n\n'
+        + 'web/build.sh --serve\n\nthen visit http://localhost:8080';
+    } else if (!navigator.gpu) {
+      status.className = 'error';
+      status.textContent = 'Splat Crawler needs WebGPU.\nUse a current Chrome, Edge or Safari (or Firefox with WebGPU enabled).';
+    } else {
+      try {
+        const { default: init } = await import('./pkg/splat_crawler_web.js');
+        await init();
+      } catch (e) {
+        // winit hands control to the browser by throwing; anything else is a real failure
+        if (!String(e).includes('Using exceptions for control flow')) {
+          status.className = 'error';
+          status.textContent = 'Failed to start: ' + e;
+          console.error(e);
+        }
+      }
+      document.getElementById('splat-canvas').focus();
+    }
+  </script>
+</body>
+</html>
